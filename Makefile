@@ -1,6 +1,11 @@
 export THEOS = $(HOME)/theos
 ARCHS = arm64
-TARGET := iphone:clang:16.5
+SDK_VERSION := $(shell xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)
+ifeq ($(SDK_VERSION),)
+TARGET := iphone:clang:latest:16.5
+else
+TARGET := iphone:clang:$(SDK_VERSION):16.5
+endif
 DEBUG = 0
 FINALPACKAGE = 1
 FOR_RELEASE = 1
@@ -17,9 +22,11 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = silenticum
 
 OBFUSCATOR_PATH = /home/chi/Hikari-LLVM19/build/bin
+ifneq ($(wildcard $(OBFUSCATOR_PATH)/clang),)
 TARGET_CC = $(OBFUSCATOR_PATH)/clang
 TARGET_CXX = $(OBFUSCATOR_PATH)/clang++
 TARGET_LD = $(OBFUSCATOR_PATH)/clang++
+endif
 
 _THEOS_TARGET_CFLAGS += -mllvm --enable-fco
 _THEOS_TARGET_CFLAGS += -mllvm --enable-vfe
