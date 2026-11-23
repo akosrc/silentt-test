@@ -26,13 +26,13 @@ ifneq ($(wildcard $(OBFUSCATOR_PATH)/clang),)
 TARGET_CC = $(OBFUSCATOR_PATH)/clang
 TARGET_CXX = $(OBFUSCATOR_PATH)/clang++
 TARGET_LD = $(OBFUSCATOR_PATH)/clang++
-endif
 
 _THEOS_TARGET_CFLAGS += -mllvm --enable-fco
 _THEOS_TARGET_CFLAGS += -mllvm --enable-vfe
 _THEOS_TARGET_CFLAGS += -mllvm --enable-adb
 _THEOS_TARGET_CFLAGS += -mllvm --enable-splitobf
 _THEOS_TARGET_CFLAGS += -mllvm -enable-strcry
+endif
 
 _THEOS_TARGET_CFLAGS += -Wno-nontrivial-memcall -Wno-error
 
