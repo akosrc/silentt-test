@@ -1,0 +1,8 @@
+Package: com.chi.silenticum
+Name: Silenticum
+Version: 1.0
+Architecture: iphoneos-arm64
+Maintainer: chi <chi@localhost>
+Description: Silenticum tweak for PUBG Mobile Global
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000)
