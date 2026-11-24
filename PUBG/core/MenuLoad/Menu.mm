@@ -32,6 +32,7 @@ extern bool menu_open;
 @property (nonatomic, strong) ImGuiDrawView *vna;
 @property (nonatomic, strong) UIButton *menuButton;
 @property (nonatomic, assign) BOOL gestureInstalled;
+@property (nonatomic, assign) int retryCount;
 - (void)initMenu;
 - (void)bringOverlayToTop;
 - (void)initFloatingButton:(UIView *)parentView;
@@ -44,6 +45,7 @@ extern bool menu_open;
 static UIWindowScene *FindActiveWindowScene(void) {
     if (@available(iOS 13.0, *)) {
         UIApplication *app = [UIApplication sharedApplication];
+        if (!app) return nil;
         for (UIScene *scene in app.connectedScenes) {
             if (scene.activationState == UISceneActivationStateForegroundActive &&
                 [scene isKindOfClass:[UIWindowScene class]]) {
@@ -61,6 +63,7 @@ static UIWindowScene *FindActiveWindowScene(void) {
 
 static UIWindow *FindActiveMainWindow(void) {
     UIApplication *app = [UIApplication sharedApplication];
+    if (!app) return nil;
     for (UIWindow *win in app.windows) {
         if (![win isKindOfClass:[ImGuiOverlayWindow class]] && win.isKeyWindow) {
             return win;
@@ -115,6 +118,13 @@ void initAPI(){
 
 - (void)bringOverlayToTop {
     if (!_overlayWindow) return;
+    UIWindowScene *scene = FindActiveWindowScene();
+    if (@available(iOS 13.0, *)) {
+        if (scene && _overlayWindow.windowScene != scene) {
+            _overlayWindow.windowScene = scene;
+            _overlayWindow.frame = scene.coordinateSpace.bounds;
+        }
+    }
     _overlayWindow.windowLevel = OVERLAY_TOP_LEVEL;
     _overlayWindow.hidden = NO;
     if (_overlayWindow.rootViewController.view && _vna.view) {
@@ -184,9 +194,18 @@ void initAPI(){
 }
 
 - (void)initMenu { 
+    UIWindowScene *scene = FindActiveWindowScene();
+    UIWindow *mainWin = FindActiveMainWindow();
+    if (!scene && !mainWin && self.retryCount < 15) {
+        self.retryCount++;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self initMenu];
+        });
+        return;
+    }
+
     if (!_overlayWindow) {
         CGRect bounds = [UIScreen mainScreen].bounds;
-        UIWindowScene *scene = FindActiveWindowScene();
         if (@available(iOS 13.0, *)) {
             if (scene) {
                 _overlayWindow = [[ImGuiOverlayWindow alloc] initWithWindowScene:scene];
@@ -203,6 +222,7 @@ void initAPI(){
 
         UIViewController *rootVC = [[UIViewController alloc] init];
         rootVC.view.backgroundColor = [UIColor clearColor];
+        rootVC.view.frame = _overlayWindow.bounds;
         _overlayWindow.rootViewController = rootVC;
 
         _vna = [[ImGuiDrawView alloc] init]; 
@@ -212,19 +232,11 @@ void initAPI(){
         _vna.view.backgroundColor = [UIColor clearColor]; 
         [rootVC.view addSubview:_vna.view]; 
         _vna.view.hidden = YES; 
-        _overlayWindow.hidden = NO;
         menu_open = false; 
 
         [self initFloatingButton:rootVC.view];
         [self bringOverlayToTop];
     } else {
-        UIWindowScene *scene = FindActiveWindowScene();
-        if (@available(iOS 13.0, *)) {
-            if (scene && _overlayWindow.windowScene != scene) {
-                _overlayWindow.windowScene = scene;
-                _overlayWindow.frame = scene.coordinateSpace.bounds;
-            }
-        }
         [self initFloatingButton:_overlayWindow.rootViewController.view];
         [self bringOverlayToTop];
     }
@@ -243,9 +255,11 @@ void initAPI(){
     UIWindow *mainWindow = FindActiveMainWindow();
     UIView *targetView = mainWindow.rootViewController.view ?: mainWindow;
     if (!targetView) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [self initTapGes];
-        });
+        if (self.retryCount < 15) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self initTapGes];
+            });
+        }
         return;
     }
 
