@@ -27,19 +27,16 @@ extern bool menu_open;
 }
 @end
 
-@interface ImGuiLoad : NSObject
+@interface ImGuiLoad ()
 @property (nonatomic, strong) ImGuiOverlayWindow *overlayWindow;
 @property (nonatomic, strong) ImGuiDrawView *vna;
 @property (nonatomic, strong) UIButton *menuButton;
 @property (nonatomic, assign) BOOL gestureInstalled;
-+ (instancetype)share;
-- (void)show;
 - (void)initMenu;
 - (void)bringOverlayToTop;
 - (void)initFloatingButton:(UIView *)parentView;
 - (void)handleButtonTap;
 - (void)handleButtonPan:(UIPanGestureRecognizer *)pan;
-- (void)initTapGes;
 - (void)toggleMenu;
 - (void)handleTap:(UITapGestureRecognizer *)gesture;
 @end
