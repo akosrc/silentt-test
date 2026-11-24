@@ -7,12 +7,39 @@
 
 extern bool menu_open;
 
+static UIWindow *FindActiveKeyWindow(void) {
+    UIApplication *app = [UIApplication sharedApplication];
+    for (UIWindow *win in app.windows) {
+        if (win.isKeyWindow && win.rootViewController.view) {
+            return win;
+        }
+    }
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in app.connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive &&
+                [scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                for (UIWindow *win in windowScene.windows) {
+                    if (win.isKeyWindow && win.rootViewController.view) {
+                        return win;
+                    }
+                }
+                if (windowScene.windows.lastObject.rootViewController.view) {
+                    return windowScene.windows.lastObject;
+                }
+            }
+        }
+    }
+    return app.keyWindow ?: app.windows.lastObject;
+}
+
 void initAPI(){
-    [[ImGuiLoad share] performSelector:@selector(initMenu)];
+    [[ImGuiLoad share] show];
 }
 
 @interface ImGuiLoad()
 @property (nonatomic, strong) ImGuiDrawView *vna;
+@property (nonatomic, assign) BOOL gestureInstalled;
 - (void)initMenu;
 - (void)initTapGes;
 - (void)toggleMenu;
@@ -39,36 +66,65 @@ void initAPI(){
 
 - (void)show { 
     [self initMenu]; 
+    if (!_vna.view) return;
     _vna.view.hidden = NO; 
     menu_open = true; 
+    if (_vna.view.superview) {
+        [_vna.view.superview bringSubviewToFront:_vna.view];
+    }
 }
 
 - (void)initMenu { 
+    UIWindow *keyWindow = FindActiveKeyWindow();
+    UIView *parentView = keyWindow.rootViewController.view ?: keyWindow;
+    if (!parentView) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self initMenu];
+        });
+        return;
+    }
+
     if (!_vna) { 
         _vna = [[ImGuiDrawView alloc] init]; 
         _vna.view.frame = [UIScreen mainScreen].bounds; 
         _vna.view.userInteractionEnabled = YES; 
         _vna.view.backgroundColor = [UIColor clearColor]; 
-        UIWindowScene *windowScene = (UIWindowScene *)[UIApplication sharedApplication].connectedScenes.allObjects.firstObject; 
-        UIWindow *keyWindow = windowScene.windows.firstObject; 
-        [keyWindow.rootViewController.view addSubview:_vna.view]; 
-        _vna.view.hidden = YES; 
-        menu_open = false; 
-    } 
+        [parentView addSubview:_vna.view]; 
+        _vna.view.hidden = NO; 
+        menu_open = true; 
+    } else if (_vna.view.superview != parentView) {
+        [_vna.view removeFromSuperview];
+        [parentView addSubview:_vna.view];
+    }
 }
 
 - (void)toggleMenu { 
+    [self initMenu];
+    if (!_vna.view) return;
     _vna.view.hidden = !_vna.view.hidden; 
     menu_open = !_vna.view.hidden; 
+    if (menu_open && _vna.view.superview) {
+        [_vna.view.superview bringSubviewToFront:_vna.view];
+    }
 }
 
 - (void)initTapGes { 
+    if (self.gestureInstalled) return;
+    UIWindow *keyWindow = FindActiveKeyWindow();
+    UIView *targetView = keyWindow ?: keyWindow.rootViewController.view;
+    if (!targetView) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self initTapGes];
+        });
+        return;
+    }
+
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)]; 
     tap.numberOfTapsRequired = 2; 
     tap.numberOfTouchesRequired = 2; 
-    UIWindowScene *windowScene = (UIWindowScene *)[UIApplication sharedApplication].connectedScenes.allObjects.firstObject; 
-    UIWindow *keyWindow = windowScene.windows.firstObject; 
-    [keyWindow.rootViewController.view addGestureRecognizer:tap]; 
+    tap.cancelsTouchesInView = NO;
+    [targetView addGestureRecognizer:tap]; 
+    self.gestureInstalled = YES;
 }
 
 - (void)handleTap:(UITapGestureRecognizer *)gesture { 
