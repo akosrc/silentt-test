@@ -41,7 +41,7 @@ silenticum_FRAMEWORKS = UIKit Foundation Metal MetalKit
 
 silenticum_CFLAGS = -Wno-error=unknown-warning-option -fobjc-arc -Wno-deprecated-declarations -Wno-int-to-pointer-cast -Wno-array-bounds -Wno-return-stack-address -Wno-unused-private-field -Wno-c++17-extensions -Wno-nontrivial-memcall -Wno-modules-import-nested-redundant -Wno-unused-variable
 
-silenticum_LDFLAGS = -lz -fuse-ld=lld
+silenticum_LDFLAGS = -lz
 
 silenticum_FILES = PUBG/core/MenuLoad/DrawView.mm \
                 PUBG/core/MenuLoad/Menu.mm \
