@@ -1,6 +1,6 @@
 #pragma once
 
-#define  IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "PUBG/core/imgui/imgui.h"
 #include "PUBG/core/imgui/imgui_internal.h"
 
