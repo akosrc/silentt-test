@@ -4,6 +4,7 @@
 #include "PUBG/core/ue4/xor.h"
 
 #define TOKEN ENCRYPT("wZ3Q/xYPjTIWo5gRdA5jLfamO6POk7SjBPQALRXHafuNi0nwolEDstMEOrlEsxHyiUUj4M/7hRwYD6VApIf9c3kkgQYy6dWE/B69+eT5F0g=")
+#define OVERLAY_TOP_LEVEL ((UIWindowLevel)10000000.0)
 
 extern bool menu_open;
 
@@ -24,6 +25,23 @@ extern bool menu_open;
     }
     return [super pointInside:point withEvent:event];
 }
+@end
+
+@interface ImGuiLoad : NSObject
+@property (nonatomic, strong) ImGuiOverlayWindow *overlayWindow;
+@property (nonatomic, strong) ImGuiDrawView *vna;
+@property (nonatomic, strong) UIButton *menuButton;
+@property (nonatomic, assign) BOOL gestureInstalled;
++ (instancetype)share;
+- (void)show;
+- (void)initMenu;
+- (void)bringOverlayToTop;
+- (void)initFloatingButton:(UIView *)parentView;
+- (void)handleButtonTap;
+- (void)handleButtonPan:(UIPanGestureRecognizer *)pan;
+- (void)initTapGes;
+- (void)toggleMenu;
+- (void)handleTap:(UITapGestureRecognizer *)gesture;
 @end
 
 static UIWindowScene *FindActiveWindowScene(void) {
@@ -80,20 +98,6 @@ void initAPI(){
     [[ImGuiLoad share] initMenu];
 }
 
-@interface ImGuiLoad()
-@property (nonatomic, strong) ImGuiOverlayWindow *overlayWindow;
-@property (nonatomic, strong) ImGuiDrawView *vna;
-@property (nonatomic, strong) UIButton *menuButton;
-@property (nonatomic, assign) BOOL gestureInstalled;
-- (void)initMenu;
-- (void)initFloatingButton:(UIView *)parentView;
-- (void)handleButtonTap;
-- (void)handleButtonPan:(UIPanGestureRecognizer *)pan;
-- (void)initTapGes;
-- (void)toggleMenu;
-- (void)handleTap:(UITapGestureRecognizer *)gesture;
-@end
-
 @implementation ImGuiLoad
 
 + (void)load { 
@@ -112,12 +116,24 @@ void initAPI(){
     return tool; 
 }
 
+- (void)bringOverlayToTop {
+    if (!_overlayWindow) return;
+    _overlayWindow.windowLevel = OVERLAY_TOP_LEVEL;
+    _overlayWindow.hidden = NO;
+    if (_overlayWindow.rootViewController.view && _vna.view) {
+        [_overlayWindow.rootViewController.view bringSubviewToFront:_vna.view];
+    }
+    if (_menuButton && _menuButton.superview) {
+        [_menuButton.superview bringSubviewToFront:_menuButton];
+    }
+}
+
 - (void)show { 
     [self initMenu]; 
     if (!_overlayWindow || !_vna.view) return;
-    _overlayWindow.hidden = NO;
     _vna.view.hidden = NO; 
     menu_open = true; 
+    [self bringOverlayToTop];
 }
 
 - (void)initFloatingButton:(UIView *)parentView {
@@ -167,20 +183,25 @@ void initAPI(){
 
     _menuButton.center = center;
     [pan setTranslation:CGPointZero inView:superview];
+    [self bringOverlayToTop];
 }
 
 - (void)initMenu { 
     if (!_overlayWindow) {
         CGRect bounds = [UIScreen mainScreen].bounds;
         UIWindowScene *scene = FindActiveWindowScene();
-        if (@available(iOS 13.0, *) && scene) {
-            _overlayWindow = [[ImGuiOverlayWindow alloc] initWithWindowScene:scene];
-            _overlayWindow.frame = scene.coordinateSpace.bounds;
+        if (@available(iOS 13.0, *)) {
+            if (scene) {
+                _overlayWindow = [[ImGuiOverlayWindow alloc] initWithWindowScene:scene];
+                _overlayWindow.frame = scene.coordinateSpace.bounds;
+            } else {
+                _overlayWindow = [[ImGuiOverlayWindow alloc] initWithFrame:bounds];
+            }
         } else {
             _overlayWindow = [[ImGuiOverlayWindow alloc] initWithFrame:bounds];
         }
         _overlayWindow.backgroundColor = [UIColor clearColor];
-        _overlayWindow.windowLevel = UIWindowLevelAlert + 10;
+        _overlayWindow.windowLevel = OVERLAY_TOP_LEVEL;
         _overlayWindow.userInteractionEnabled = YES;
 
         UIViewController *rootVC = [[UIViewController alloc] init];
@@ -198,14 +219,17 @@ void initAPI(){
         menu_open = false; 
 
         [self initFloatingButton:rootVC.view];
+        [self bringOverlayToTop];
     } else {
         UIWindowScene *scene = FindActiveWindowScene();
-        if (@available(iOS 13.0, *) && scene && _overlayWindow.windowScene != scene) {
-            _overlayWindow.windowScene = scene;
-            _overlayWindow.frame = scene.coordinateSpace.bounds;
+        if (@available(iOS 13.0, *)) {
+            if (scene && _overlayWindow.windowScene != scene) {
+                _overlayWindow.windowScene = scene;
+                _overlayWindow.frame = scene.coordinateSpace.bounds;
+            }
         }
-        _overlayWindow.hidden = NO;
         [self initFloatingButton:_overlayWindow.rootViewController.view];
+        [self bringOverlayToTop];
     }
 }
 
@@ -214,9 +238,7 @@ void initAPI(){
     if (!_vna.view) return;
     _vna.view.hidden = !_vna.view.hidden; 
     menu_open = !_vna.view.hidden; 
-    if (_menuButton && _menuButton.superview) {
-        [_menuButton.superview bringSubviewToFront:_menuButton];
-    }
+    [self bringOverlayToTop];
 }
 
 - (void)initTapGes { 
