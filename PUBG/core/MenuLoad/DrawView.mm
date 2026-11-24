@@ -11,6 +11,7 @@
 #include "PUBG/core/imgui/imgui.h"
 #include "PUBG/core/imgui/imgui_impl_metal.h"
 #include "PUBG/core/ue4/xor.h"
+#include <algorithm>
 #include <cmath>
 #include <vector>
 #include <string>
@@ -25,6 +26,15 @@
 #include "gui/trash/hashes.hpp"
 #include "gui/blur/blur.hpp"
 #include "gui/trash/bytes.hpp"
+
+static inline SDK::FString ToFStringW(const std::wstring& s) {
+    return SDK::FString(s.c_str());
+}
+
+static inline std::wstring GetWStr(const SDK::FString& fs) {
+    return (fs.IsValid() && fs.Data()) ? std::wstring(fs.Data()) : L"";
+}
+
 
 #define STR(str) ENCRYPT(str)
 using namespace ImGui;
