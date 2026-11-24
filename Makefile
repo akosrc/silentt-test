@@ -1,5 +1,6 @@
 export THEOS = $(HOME)/theos
 ARCHS = arm64
+SUBSTRATE = 0
 SDK_VERSION := $(shell xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)
 ifeq ($(SDK_VERSION),)
 TARGET := iphone:clang:latest:16.5
@@ -40,7 +41,7 @@ silenticum_FRAMEWORKS = UIKit Foundation Metal MetalKit
 
 silenticum_CFLAGS = -Wno-error=unknown-warning-option -fobjc-arc -Wno-deprecated-declarations -Wno-int-to-pointer-cast -Wno-array-bounds -Wno-return-stack-address -Wno-unused-private-field -Wno-c++17-extensions -Wno-nontrivial-memcall -Wno-modules-import-nested-redundant -Wno-unused-variable
 
-silenticum_LDFLAGS = API/libAPIClient.a -lz -fuse-ld=lld
+silenticum_LDFLAGS = -lz -fuse-ld=lld
 
 silenticum_FILES = PUBG/core/MenuLoad/DrawView.mm \
                 PUBG/core/MenuLoad/Menu.mm \
