@@ -1,7 +1,6 @@
 #import <UIKit/UIKit.h>
 #include "PUBG/core/MenuLoad/Includes.h"
 #import <AVFoundation/AVFoundation.h>
-#import "API/APIClient.h"
 #include "PUBG/core/ue4/xor.h"
 
 #define TOKEN ENCRYPT("wZ3Q/xYPjTIWo5gRdA5jLfamO6POk7SjBPQALRXHafuNi0nwolEDstMEOrlEsxHyiUUj4M/7hRwYD6VApIf9c3kkgQYy6dWE/B69+eT5F0g=")
@@ -9,11 +8,7 @@
 extern bool menu_open;
 
 void initAPI(){
-    apiclient_set_token(TOKEN);
-    apiclient_set_language(ENCRYPT("en"));
-    apiclient_paid(^{
-        [[ImGuiLoad share] performSelector:@selector(initMenu)];
-    });
+    [[ImGuiLoad share] performSelector:@selector(initMenu)];
 }
 
 @interface ImGuiLoad()
